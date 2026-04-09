@@ -12,3 +12,4 @@ The project documentation will be built during the bootcamp sessions.
 - [Functional Requirements](../docs/functional-requirements.md) - Functional requirements for the todo application, including scheduling, priorities, editing, validation, and persistence expectations
 - [UI Guidelines](../docs/ui-guidelines.md) - Core UI design guidance for the todo application, including Material components, purple and teal theming, and dark mode expectations
 - [Testing Guidelines](../docs/testing-guidelines.md) - Testing standards for unit, integration, and end-to-end coverage, naming, structure, and maintainability
+- [Coding Guidelines](../docs/coding-guidelines.md) - Coding standards for import order, formatting consistency, and linting expectations
