@@ -21,9 +21,9 @@ export class TodoPage {
   }
 
   async getTaskCount() {
-    const text = await this.page.locator('text=Open').textContent();
-    // Extract count from "Open: X / Y" format
-    const match = text.match(/(\d+)\s*\/\s*(\d+)/);
+    const text = await this.page.locator('h1 + p').textContent();
+    // Extract count from "X open task(s) out of Y" format
+    const match = text?.match(/(\d+)\s+open\s+tasks?\s+out\s+of\s+(\d+)/i);
     if (match) {
       return {
         open: parseInt(match[1], 10),
@@ -49,15 +49,9 @@ export class TodoPage {
   }
 
   async selectPriority(priority) {
-    // Open priority select dropdown
-    const selects = await this.page.locator('select').all();
-    if (selects.length > 0) {
-      await selects[0].selectOption(priority);
-    } else {
-      // Fallback for Material UI select
-      await this.page.locator(`button:has-text("${priority || 'Select priority'}")`).click();
-      await this.page.locator(`li[data-value="${priority}"]`).click();
-    }
+    const priorityCombo = this.page.getByRole('combobox', { name: 'Priority' }).first();
+    await priorityCombo.click();
+    await this.page.getByRole('option', { name: priority, exact: true }).click();
   }
 
   async setScheduledDate(date) {
@@ -69,7 +63,7 @@ export class TodoPage {
   }
 
   async submitCreateForm() {
-    await this.page.locator('button:has-text("Create Task")').click();
+    await this.page.getByRole('button', { name: 'Add Task' }).click();
     // Wait for task to appear in the list
     await this.page.waitForTimeout(500);
   }
@@ -77,27 +71,23 @@ export class TodoPage {
   // ==================== Task List ====================
 
   async getTodoCount() {
-    const todos = await this.page
-      .locator('div[role="listitem"]')
-      .count();
-    return todos;
+    return this.page.getByRole('listitem').count();
   }
 
   async getTodoTitles() {
     const titles = await this.page
-      .locator('div[role="listitem"]')
-      .locator('h6')
+      .locator('.MuiListItemText-primary')
       .allTextContents();
     return titles;
   }
 
   async getTodoByTitle(title) {
-    return this.page.locator(`div[role="listitem"]:has-text("${title}")`).first();
+    return this.page.getByRole('listitem').filter({ hasText: title }).first();
   }
 
   async getEmptyStateText() {
     try {
-      return await this.page.locator('text=No todos yet').textContent();
+      return await this.page.locator('text=No tasks yet').textContent();
     } catch {
       return null;
     }
@@ -120,7 +110,7 @@ export class TodoPage {
 
   async openEditDialog(title) {
     const todo = await this.getTodoByTitle(title);
-    const editButton = await todo.locator('button[aria-label="Edit"]').first();
+    const editButton = await todo.getByRole('button', { name: 'Edit' }).first();
     await editButton.click();
     // Wait for dialog to open
     await this.page.locator('[role="dialog"]').waitFor({ state: 'visible' });
@@ -141,10 +131,9 @@ export class TodoPage {
     }
 
     if (fields.priority) {
-      const selects = await dialog.locator('select').all();
-      if (selects.length > 0) {
-        await selects[0].selectOption(fields.priority);
-      }
+      const priorityCombo = dialog.getByRole('combobox', { name: 'Priority' });
+      await priorityCombo.click();
+      await this.page.getByRole('option', { name: fields.priority, exact: true }).click();
     }
 
     if (fields.scheduledDate) {
@@ -165,7 +154,7 @@ export class TodoPage {
 
   async deleteTodo(title) {
     const todo = await this.getTodoByTitle(title);
-    const deleteButton = await todo.locator('button[aria-label="Delete"]').first();
+    const deleteButton = await todo.getByRole('button', { name: 'Delete' }).first();
     await deleteButton.click();
     await this.page.waitForTimeout(500);
   }
@@ -218,14 +207,8 @@ export class TodoPage {
   async waitForTodo(title, timeout = 5000) {
     await this.page.waitForFunction(
       (titleText) => {
-        const element = document.evaluate(
-          `//h6[contains(text(), '${titleText}')]`,
-          document,
-          null,
-          XPathResult.FIRST_ORDERED_NODE_TYPE,
-          null
-        ).singleNodeValue;
-        return element !== null;
+        return Array.from(document.querySelectorAll('.MuiListItemText-primary'))
+          .some((node) => node.textContent?.includes(titleText));
       },
       title,
       { timeout }
@@ -233,10 +216,10 @@ export class TodoPage {
   }
 
   async clearAllTodos() {
-    const deleteButtons = await this.page.locator('button[aria-label="Delete"]').all();
-    for (const btn of deleteButtons) {
-      await btn.click();
-      await this.page.waitForTimeout(300);
+    const deleteButtons = this.page.getByRole('button', { name: 'Delete' });
+    while (await deleteButtons.count()) {
+      await deleteButtons.first().click();
+      await this.page.waitForTimeout(150);
     }
   }
 }

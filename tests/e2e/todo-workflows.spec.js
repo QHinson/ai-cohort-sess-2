@@ -17,6 +17,7 @@ test.describe('Todo Application E2E Tests', () => {
   test.beforeEach(async ({ page }) => {
     todoPage = new TodoPage(page);
     await todoPage.goto();
+    await todoPage.clearAllTodos();
   });
 
   // ==================== Page Loading ====================
@@ -28,7 +29,7 @@ test.describe('Todo Application E2E Tests', () => {
 
   test('should display empty state when no todos exist', async () => {
     const emptyText = await todoPage.getEmptyStateText();
-    expect(emptyText).toContain('No todos yet');
+    expect(emptyText).toContain('No tasks yet');
   });
 
   test('should display initial task count as 0/0', async () => {
